@@ -4,8 +4,12 @@ import io
 from PIL import Image
 import datetime
 
-# --- DESIGN & APPLE-STYLE INTERACTION ---
+# --- KONFIGURATION & DESIGN ---
 st.set_page_config(page_title="iFound | Next Gen", layout="wide", initial_sidebar_state="collapsed")
+
+# Dein Hugging Face Token (optional, aber empfohlen für Stabilität)
+HEADERS = {"Authorization": "Bearer DEIN_TOKEN_HIER"} 
+API_URL = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
 
 st.markdown("""
     <style>
@@ -15,49 +19,41 @@ st.markdown("""
         background-size: cover;
     }
 
-    /* Große Klick-Flächen (Cards) */
-    .big-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(15px);
-        border-radius: 30px;
-        padding: 60px 20px;
-        text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        margin-bottom: 10px;
-    }
-
-    /* Versteckter Button-Trick: Wir stylen den Streamlit-Button so, 
-       dass er die ganze Karte überlagert */
+    /* Große Kacheln auf dem Home-Bildschirm */
     div.stButton > button {
-        height: 200px;
+        height: 180px;
         width: 100% !important;
-        background-color: transparent !important;
+        background-color: rgba(255,255,255,0.05) !important;
+        backdrop-filter: blur(15px);
         color: white !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
         font-size: 1.5rem !important;
         font-weight: 200 !important;
-        transition: all 0.3s !important;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     }
 
     div.stButton > button:hover {
-        background-color: rgba(255,255,255,0.1) !important;
-        transform: scale(1.02);
+        background-color: rgba(255,255,255,0.15) !important;
+        transform: scale(1.05);
         border: 1px solid white !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 
-    h1 {
-        font-family: -apple-system, sans-serif;
-        letter-spacing: -2px;
-        font-weight: 700;
-        font-size: 5rem !important;
+    /* Zurück-Button Styling */
+    .back-btn button {
+        height: auto !important;
+        width: auto !important;
+        padding: 10px 20px !important;
+        font-size: 1rem !important;
+        border-radius: 10px !important;
     }
+
+    h1 { font-family: -apple-system, sans-serif; font-weight: 700; font-size: 4rem !important; color: white; text-align: center; }
+    p { color: rgba(255,255,255,0.7); text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LOGIK ---
+# --- SESSION STATE ---
 if 'page' not in st.session_state:
     st.session_state['page'] = 'home'
 if 'inventar' not in st.session_state:
@@ -66,45 +62,87 @@ if 'inventar' not in st.session_state:
 def set_page(name):
     st.session_state['page'] = name
 
-# --- SEITE: HOME ---
-if st.session_state['page'] == 'home':
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: white;'>iFound</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: rgba(255,255,255,0.6); font-size: 1.5rem;'>Das intelligente Fundbüro der Zukunft.</p>", unsafe_allow_html=True)
-    st.markdown("<br><br>", unsafe_allow_html=True)
+def query_ki(image_bytes):
+    response = requests.post(API_URL, headers=HEADERS, data=image_bytes)
+    return response.json()
 
-    # Hier kommen die riesigen Auswahl-Flächen
-    col1, col2, col3, col4, col5 = st.columns([0.5, 2, 0.2, 2, 0.5])
+# --- NAVIGATION ---
+
+# 1. HOME SEITE
+if st.session_state['page'] == 'home':
+    st.markdown("<br><br><h1>iFound</h1><p>Intelligentes Fundbüro</p><br>", unsafe_allow_html=True)
     
+    col1, col2, col3, col4, col5 = st.columns([0.5, 2, 0.2, 2, 0.5])
     with col2:
-        st.markdown("<p style='text-align: center; color: white; margin-bottom: -50px; font-size: 4rem;'>🔍</p>", unsafe_allow_html=True)
-        if st.button("Fund melden"):
+        if st.button("🔍\nFund melden"):
             set_page('melden')
             st.rerun()
-            
     with col4:
-        st.markdown("<p style='text-align: center; color: white; margin-bottom: -50px; font-size: 4rem;'>📂</p>", unsafe_allow_html=True)
-        if st.button("Archiv öffnen"):
+        if st.button("📂\nArchiv öffnen"):
             set_page('archiv')
             st.rerun()
 
-# --- SEITE: MELDEN ---
+# 2. MELDEN SEITE
 elif st.session_state['page'] == 'melden':
-    if st.button("← Zurück zum Dashboard"):
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("← Zurück"):
         set_page('home')
         st.rerun()
-    
-    st.markdown("<h2 style='color: white;'>Neuen Fund registrieren</h2>", unsafe_allow_html=True)
-    # Hier kommt dein restlicher Code für den Upload...
-    # (Siehe vorherige Nachricht für die KI-Logik)
-    st.info("Hier kannst du jetzt dein Foto hochladen.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SEITE: ARCHIV ---
+    st.markdown("<h2 style='color: white;'>Neuen Fall registrieren</h2>", unsafe_allow_html=True)
+    
+    col_up, col_pre = st.columns(2)
+    
+    with col_up:
+        # HIER ist der Button zum Dateien öffnen!
+        uploaded_file = st.file_uploader("Bild des Gegenstands wählen", type=["jpg", "jpeg", "png"])
+        ort = st.text_input("Wo wurde es gefunden?", placeholder="z.B. Mensa, Raum 204")
+
+    if uploaded_file:
+        img_bytes = uploaded_file.getvalue()
+        image = Image.open(io.BytesIO(img_bytes))
+        
+        with col_pre:
+            st.image(image, caption="Vorschau", width=300)
+            if st.button("✨ KI-Analyse starten"):
+                with st.spinner("KI identifiziert Objekt..."):
+                    try:
+                        res = query_ki(img_bytes)
+                        label = res[0]['label'].split(",")[0]
+                        st.session_state['temp_item'] = label
+                        st.success(f"Erkannt: {label}")
+                    except:
+                        st.error("Fehler bei der KI-Anfrage.")
+            
+            if 'temp_item' in st.session_state:
+                if st.button("✅ Im Archiv speichern"):
+                    st.session_state['inventar'].append({
+                        "name": st.session_state['temp_item'],
+                        "ort": ort,
+                        "bild": image,
+                        "zeit": datetime.datetime.now().strftime("%d.%m. %H:%M")
+                    })
+                    st.balloons()
+                    del st.session_state['temp_item']
+                    set_page('home')
+                    st.rerun()
+
+# 3. ARCHIV SEITE
 elif st.session_state['page'] == 'archiv':
-    if st.button("← Zurück zum Dashboard"):
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("← Zurück"):
         set_page('home')
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<h2 style='color: white;'>Das digitale Archiv</h2>", unsafe_allow_html=True)
     
-    st.markdown("<h2 style='color: white;'>Durchsuche alle Beweismittel</h2>", unsafe_allow_html=True)
-    # Hier kommt dein restlicher Code für die Liste...
-    st.write("Aktuell sind 0 Gegenstände im System.")
+    if not st.session_state['inventar']:
+        st.info("Das Archiv ist noch leer. Melde einen Fund, um es zu füllen!")
+    else:
+        for item in reversed(st.session_state['inventar']):
+            with st.expander(f"{item['name']} - {item['zeit']}"):
+                c1, c2 = st.columns([1, 2])
+                c1.image(item['bild'], width=150)
+                c2.write(f"**Ort:** {item['ort']}")
