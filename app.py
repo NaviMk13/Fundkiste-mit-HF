@@ -5,7 +5,7 @@ from PIL import Image
 import datetime
 
 # --- KONFIGURATION & DESIGN ---
-st.set_page_config(page_title="iFound | Nature Edition", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="iFound | Premium Edition", layout="wide", initial_sidebar_state="collapsed")
 
 # Dein Hugging Face Token (optional)
 HEADERS = {"Authorization": "Bearer DEIN_TOKEN_HIER"} 
@@ -13,48 +13,73 @@ API_URL = "https://api-inference.huggingface.co/models/google/vit-base-patch16-2
 
 st.markdown("""
     <style>
+    /* Hintergrund & Basis-Animation */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+
     .stApp {
-        /* Zurück zum Wald-Hintergrund */
-        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+        background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
                     url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80");
         background-size: cover;
+        background-attachment: fixed;
     }
 
-    /* Große Kacheln auf dem Home-Bildschirm */
+    /* SCHRIFT-OPTIMIERUNG: Weißer Text mit schwarzem Schatten für maximalen Kontrast */
+    h1, h2, h3, p, label, .stMarkdown {
+        color: #FFFFFF !important;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.8) !important;
+        animation: fadeIn 1s ease-out;
+    }
+
+    /* Apple-Style Home-Kacheln */
     div.stButton > button {
-        height: 220px;
+        height: 250px;
         width: 100% !important;
-        background-color: rgba(255,255,255,0.1) !important;
-        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(25px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
         color: white !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
         border-radius: 40px !important;
-        font-size: 1.8rem !important;
-        font-weight: 300 !important;
-        transition: all 0.4s ease !important;
+        font-size: 2rem !important;
+        font-weight: 600 !important;
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        animation: fadeIn 1.2s ease-out;
     }
 
     div.stButton > button:hover {
-        background-color: rgba(255,255,255,0.2) !important;
-        transform: translateY(-10px);
-        border: 1px solid white !important;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        background: rgba(255, 255, 255, 0.3) !important;
+        transform: scale(1.05) translateY(-10px) !important;
+        border: 1px solid rgba(255, 255, 255, 1) !important;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.5) !important;
     }
 
-    /* Spezielles Styling für den Datei-Upload Bereich */
-    .stFileUploader {
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 20px;
-        border: 1px dashed rgba(255,255,255,0.4);
+    div.stButton > button:active {
+        transform: scale(0.98) !important;
     }
 
-    h1 { font-family: -apple-system, sans-serif; font-weight: 800; font-size: 5rem !important; color: white; text-align: center; margin-bottom: 0px; }
-    p { color: rgba(255,255,255,0.8); text-align: center; font-size: 1.2rem; }
+    /* Formular-Elemente Styling */
+    .stTextInput input, .stFileUploader {
+        background: rgba(0, 0, 0, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 15px !important;
+        color: white !important;
+    }
+
+    /* Navigation Back-Button */
+    .back-btn button {
+        height: auto !important;
+        width: auto !important;
+        padding: 12px 25px !important;
+        font-size: 1.1rem !important;
+        background: rgba(0,0,0,0.5) !important;
+    }
+
+    h1 { font-size: 6rem !important; letter-spacing: -3px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
+# --- LOGIK ---
 if 'page' not in st.session_state:
     st.session_state['page'] = 'home'
 if 'inventar' not in st.session_state:
@@ -67,11 +92,9 @@ def query_ki(image_bytes):
     response = requests.post(API_URL, headers=HEADERS, data=image_bytes)
     return response.json()
 
-# --- NAVIGATION ---
-
-# 1. HOME SEITE
+# --- HOME ---
 if st.session_state['page'] == 'home':
-    st.markdown("<br><br><br><h1>iFound</h1><p>Ehrlichkeit, die sich natürlich anfühlt.</p><br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br><br><h1>iFound</h1><p style='font-size: 1.8rem;'>Entdecke das Verlorene.</p><br><br>", unsafe_allow_html=True)
     
     col1, col2, col3, col4, col5 = st.columns([0.5, 2, 0.2, 2, 0.5])
     with col2:
@@ -83,64 +106,63 @@ if st.session_state['page'] == 'home':
             set_page('archiv')
             st.rerun()
 
-# 2. MELDEN SEITE
+# --- MELDEN ---
 elif st.session_state['page'] == 'melden':
-    if st.button("← Abbrechen"):
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("← Zurück"):
         set_page('home')
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<h2 style='color: white;'>Schritt 1: Beweismittel sichern</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Gegenstand einreichen</h2>", unsafe_allow_html=True)
     
     col_up, col_pre = st.columns(2)
-    
     with col_up:
-        # Hier ist dein Button zum Öffnen der Dateien
-        uploaded_file = st.file_uploader("Klicke hier oder ziehe ein Bild hinein", type=["jpg", "jpeg", "png"])
-        ort = st.text_input("Fundort", placeholder="Wo hast du es entdeckt?")
+        uploaded_file = st.file_uploader("Bild auswählen", type=["jpg", "jpeg", "png"])
+        ort = st.text_input("Wo wurde es gefunden?")
 
     if uploaded_file:
         img_bytes = uploaded_file.getvalue()
         image = Image.open(io.BytesIO(img_bytes))
-        
         with col_pre:
-            st.image(image, caption="Vorschau des Fundstücks", width=300)
-            if st.button("✨ KI-Experten fragen"):
-                with st.spinner("Die KI blättert im Katalog..."):
+            st.image(image, width=300)
+            if st.button("✨ KI-Scan starten"):
+                with st.spinner("Analysiere Moleküle..."):
                     try:
                         res = query_ki(img_bytes)
-                        label = res[0]['label'].split(",")[0]
+                        label = res[0]['label'].split(",")[0].capitalize()
                         st.session_state['temp_item'] = label
-                        st.success(f"Gefunden: {label}")
+                        st.success(f"Objekt erkannt: {label}")
                     except:
-                        st.error("Der KI-Server antwortet gerade nicht.")
+                        st.error("KI schläft gerade.")
             
             if 'temp_item' in st.session_state:
-                if st.button("✅ Offiziell registrieren"):
+                if st.button("✅ Sicher aufbewahren"):
                     st.session_state['inventar'].append({
                         "name": st.session_state['temp_item'],
                         "ort": ort,
                         "bild": image,
-                        "zeit": datetime.datetime.now().strftime("%d.%m. %H:%M")
+                        "zeit": datetime.datetime.now().strftime("%H:%M - %d.%m.%y")
                     })
                     st.balloons()
                     del st.session_state['temp_item']
                     set_page('home')
                     st.rerun()
 
-# 3. ARCHIV SEITE
+# --- ARCHIV ---
 elif st.session_state['page'] == 'archiv':
-    if st.button("← Zurück zum Dashboard"):
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("← Home"):
         set_page('home')
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<h2 style='color: white;'>Eingelagerte Gegenstände</h2>", unsafe_allow_html=True)
-    
+    st.markdown("<h2>Alle Fundstücke</h2>", unsafe_allow_html=True)
     if not st.session_state['inventar']:
-        st.info("Noch keine Gegenstände im Archiv.")
+        st.info("Das Archiv ist leer.")
     else:
         for item in reversed(st.session_state['inventar']):
-            with st.expander(f"📦 {item['name']} (Gefunden: {item['zeit']})"):
+            with st.expander(f"📦 {item['name']} | {item['ort']}"):
                 c1, c2 = st.columns([1, 2])
                 c1.image(item['bild'], width=150)
-                c2.write(f"**Ort:** {item['ort']}")
-                c2.write("Status: *Wartet auf den Besitzer*")
+                c2.write(f"**Registriert am:** {item['zeit']}")
